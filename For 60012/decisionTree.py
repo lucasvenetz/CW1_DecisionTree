@@ -99,8 +99,59 @@ def print_tree(node, depth=0, prefix="Root: "):
         print_tree(node['left'], depth + 1, "L: ")
         print_tree(node['right'], depth + 1, "R: ")
 
+def create_confusion_matrix(y_true, y_pred, cf_matrix):
+    
+    k = len(cf_matrix)
+
+    class_idx_mapping = {cls : idx for idx, cls in enumerate(k)}
+    for true, pred in zip(y_true, y_pred):
+        true_idx = class_idx_mapping[true]
+        pred_idx = class_idx_mapping[pred]
+        cf_matrix[true_idx, pred_idx] += 1
+
+    return cf_matrix
+
+def calc_accuracy(matrix):
+    result = np.trace(matrix) / np.sum(matrix)
+    return result
+
+def calc_metric(matrix):
+    k = len(matrix)
+    precision = np.zeros(k)
+    recall = np.zeros(k)
+    f1_score = np.zeros(k)
+
+    for i in range(k):
+        t_p = matrix[i,i]                   # true positives
+        f_p = np.sum(matrix[:, i]) - t_p    # false positives
+        f_n = np.sum(matrix[i, :]) - t_p    # false negatives
+
+        if (t_p + f_p) > 0:
+            precision[i] = t_p / (t_p + f_p)
+        else:
+            precision[i] = 0
+
+        if (t_p + f_n) > 0:
+            recall[i] = t_p / (t_p + f_n)
+        else:
+            recall[i] = 0
+
+        if (precision[i]+ recall[i]) > 0:
+            f1_score[i] = 2 * (precision[i] * recall[i]) / (precision[i] + recall[i])
+        else:
+            f1_score[i] = 0
+    
+    return {
+        'precision': precision,
+        'recall': recall,
+        'f1_score': f1_score
+    }
+
+
 if __name__ == "__main__":
     data_clean = np.loadtxt('wifi_db/clean_dataset.txt')
 
     tree, max_depth = decision_tree_learning(data_clean)
     print_tree(tree)
+
+
