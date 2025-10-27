@@ -88,7 +88,9 @@ def calculate_entropy(y):
     H_dataset = -np.sum(p * np.log2(p + 1e-10))
 
     return H_dataset
-    
+
+
+## EVALUATION METRICS ##    
 def create_confusion_matrix(y_true, y_pred):
     cf_matrix = np.zeros((4,4), dtype=int)
 
@@ -112,9 +114,9 @@ def calc_metric(matrix):
     f1_score = np.zeros(k)
 
     for i in range(k):
-        t_p = matrix[i,i]                   # true positives
-        f_p = np.sum(matrix[:, i]) - t_p    # false positives
-        f_n = np.sum(matrix[i, :]) - t_p    # false negatives
+        t_p = matrix[i,i] # true positives
+        f_p = np.sum(matrix[:, i]) - t_p # false positives
+        f_n = np.sum(matrix[i, :]) - t_p # false negatives
 
         if (t_p + f_p) > 0:
             precision[i] = t_p / (t_p + f_p)
@@ -153,7 +155,8 @@ def predict(test_list, tree):
     return out        
 
 
-def kfold_split(dataset, k = 10, seed = 42):     #Break up the dataset into 10 sets
+# Break up the dataset into 10 sets
+def kfold_split(dataset, k = 10, seed = 42): 
 
     randomizer = np.random.default_rng(seed)
     label = dataset[:, -1].astype(int)
@@ -199,6 +202,9 @@ def cross_validate(dataset, k=10, seed=42, max_depth=None, min_samples_split=2):
     test_metric = calc_metric(cf_matrix)
     return cf_matrix, avg_acc, test_metric
 
+
+
+## TREE VISUALISATION AND PRINT ##
 def print_tree(node, depth=0, prefix="Root: "):
     indent = "  " * depth
     if node['leaf']:
@@ -250,11 +256,11 @@ def _draw(ax, node, pos, depth, max_depth, dy, cmap):
                     fontsize=8, fontweight="bold", color="black", alpha=0.8)
             _draw(ax, child, pos, depth + 1, max_depth, dy, cmap)
 
+
 if __name__ == "__main__":
     data_clean = np.loadtxt('wifi_db/clean_dataset.txt')
     data_noisy = np.loadtxt('wifi_db/noisy_dataset.txt')
     tree, max_depth = decision_tree_learning(data_clean)
-    print_tree(tree)    
     
     print("Clean data cross-validation")
     clean_cf_matrix, clean_fold_acc, clean_eval_metric = cross_validate(data_clean,k=10)
@@ -264,13 +270,13 @@ if __name__ == "__main__":
     print("Class Recall", np.round(clean_eval_metric['recall'],4))
     print("ClassF1", np.round(clean_eval_metric['f1_score'],4))
     
-    
     print("Noisy data cross-validation")
     noisy_cf_matrix, noisy_fold_acc, noisy_eval_metric = cross_validate(data_noisy,k=10)
-    print("Confusion matrix", noisy_cf_matrix)
+    print("Confusion matrix\n", noisy_cf_matrix)
     print("Average accuracy",noisy_fold_acc)
     print("Class Precision", np.round(noisy_eval_metric['precision'],4))
     print("Class Recall", np.round(noisy_eval_metric['recall'],4))
     print("ClassF1", np.round(noisy_eval_metric['f1_score'],4))
 
+    print_tree(tree)    
     visualise_tree(tree)
