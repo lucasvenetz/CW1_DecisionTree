@@ -181,11 +181,13 @@ def evaluate(test_db, trained_tree):
     class_true = test_db[:, -1].astype(int)
     class_pred = predict(test_samples, trained_tree)
     fold_cf = create_confusion_matrix(class_true, class_pred)
-    return fold_cf
+    acc = calc_accuracy(fold_cf)
+    return fold_cf,acc
 
 def cross_validate(dataset, k=10, seed=42, max_depth=None, min_samples_split=2):
     folds = kfold_split(dataset, k=k, seed=seed)
     cf_matrix = np.zeros((4, 4), dtype=int)
+    total_acc = 0
     for i in range(k):
         test_idx = folds[i]
         train_idx = np.concatenate([folds[j] for j in range(k) if j != i]) if k > 1 else folds[i]
@@ -193,9 +195,10 @@ def cross_validate(dataset, k=10, seed=42, max_depth=None, min_samples_split=2):
         test_db = dataset[test_idx]
 
         tree, _ = decision_tree_learning(train_db, 0)
-        fold_cf = evaluate(test_db, tree)
+        fold_cf, acc = evaluate(test_db, tree)
+        total_acc += acc
         cf_matrix += fold_cf
-    avg_acc = calc_accuracy(cf_matrix)
+    avg_acc = np.round(total_acc/k,4)
     test_metric = calc_metric(cf_matrix)
     return cf_matrix, avg_acc, test_metric
 
