@@ -89,17 +89,6 @@ def calculate_entropy(y):
 
     return H_dataset
     
-def print_tree(node, depth=0, prefix="Root: "):
-
-    indent = "  " * depth
-    
-    if node['leaf']:
-        print(f"{indent}{prefix}Leaf (value={node['value']})")
-    else:
-        print(f"{indent}{prefix}features[{node['attribute']}] < {node['value']}")
-        print_tree(node['left'], depth + 1, "L: ")
-        print_tree(node['right'], depth + 1, "R: ")
-    
 def create_confusion_matrix(y_true, y_pred):
     cf_matrix = np.zeros((4,4), dtype=int)
 
@@ -209,6 +198,16 @@ def cross_validate(dataset, k=10, seed=42, max_depth=None, min_samples_split=2):
     avg_acc = calc_accuracy(cf_matrix)
     test_metric = calc_metric(cf_matrix)
     return cf_matrix, avg_acc, test_metric
+
+def print_tree(node, depth=0, prefix="Root: "):
+    indent = "  " * depth
+    if node['leaf']:
+        print(f"{indent}{prefix}Leaf (value={node['value']})")
+    else:
+        print(f"{indent}{prefix}features[{node['attribute']}] < {node['value']}")
+        print_tree(node['left'], depth + 1, "L: ")
+        print_tree(node['right'], depth + 1, "R: ")
+
 def visualise_tree(node, spacing=3.0, dy=2.0, cmap='tab20'):
     pos = {}
     _set_pos(node, 0, pos, counter=[0], spacing=spacing)
@@ -216,7 +215,7 @@ def visualise_tree(node, spacing=3.0, dy=2.0, cmap='tab20'):
 
     fig, ax = plt.subplots(figsize=(10, (max_depth + 1) * dy))
     ax.axis("off")
-    _draw(ax, node, pos, 0, max_depth, dy, plt.cm.get_cmap(cmap))
+    _draw(ax, node, pos, 0, max_depth, dy, plt.colormaps.get_cmap(cmap))
     plt.show()
 
 def _set_pos(node, depth, pos, counter, spacing):
@@ -257,7 +256,6 @@ if __name__ == "__main__":
     tree, max_depth = decision_tree_learning(data_clean)
     print_tree(tree)    
     
-    
     print("Clean data cross-validation")
     clean_cf_matrix, clean_fold_acc, clean_eval_metric = cross_validate(data_clean,k=10)
     print("Confusion matrix\n", clean_cf_matrix)
@@ -275,4 +273,4 @@ if __name__ == "__main__":
     print("Class Recall", np.round(noisy_eval_metric['recall'],4))
     print("ClassF1", np.round(noisy_eval_metric['f1_score'],4))
 
-
+    visualise_tree(tree)
