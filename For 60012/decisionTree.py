@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 """
 2000 samples
@@ -147,11 +148,52 @@ def calc_metric(matrix):
         'f1_score': f1_score
     }
 
+def visualise_tree(node, spacing=3.0, dy=2.0, cmap='tab20'):
+    pos = {}
+    _set_pos(node, 0, pos, counter=[0], spacing=spacing)
+    max_depth = max(y for _, y in pos.values())
+
+    fig, ax = plt.subplots(figsize=(10, (max_depth + 1) * dy))
+    ax.axis("off")
+    _draw(ax, node, pos, 0, max_depth, dy, plt.cm.get_cmap(cmap))
+    plt.show()
+
+def _set_pos(node, depth, pos, counter, spacing):
+    if node["leaf"]:
+        x = counter[0] * spacing
+        pos[id(node)] = (x, depth)
+        counter[0] += 1
+        return x
+    lx = _set_pos(node["left"], depth + 1, pos, counter, spacing)
+    rx = _set_pos(node["right"], depth + 1, pos, counter, spacing)
+    pos[id(node)] = ((lx + rx) / 2, depth)
+    return (lx + rx) / 2
+
+def _draw(ax, node, pos, depth, max_depth, dy, cmap):
+    x, y = pos[id(node)]
+    y = -y * dy
+    color = cmap(depth / max_depth)
+
+    # Draw node
+    label = f"leaf:{node['value']:.3f}" if node["leaf"] else f"[X{node['attribute']}<{node['value']}]"
+    ax.text(x, y, label, ha="center", va="center",
+            bbox=dict(boxstyle="round,pad=0.3", fc="#e6f5d0" if not node["leaf"] else "#f0f8ff"),
+            fontsize=9)
+
+    # Draw edges
+    if not node["leaf"]:
+        for i, (child, tag) in enumerate(zip([node["left"], node["right"]], ["T", "F"])):
+            cx, cy = pos[id(child)]
+            cy = -cy * dy
+            ax.plot([x, cx], [y - 0.1, cy + 0.1], color=color, lw=2)
+            ax.text((x + cx) / 2, (y + cy) / 2, tag, ha="center", va="center",
+                    fontsize=8, fontweight="bold", color="black", alpha=0.8)
+            _draw(ax, child, pos, depth + 1, max_depth, dy, cmap)
 
 if __name__ == "__main__":
     data_clean = np.loadtxt('wifi_db/clean_dataset.txt')
 
     tree, max_depth = decision_tree_learning(data_clean)
     print_tree(tree)
-
+    visualise_tree(tree)
 
