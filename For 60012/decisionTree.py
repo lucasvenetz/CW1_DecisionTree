@@ -255,6 +255,24 @@ if __name__ == "__main__":
     data_clean = np.loadtxt('wifi_db/clean_dataset.txt')
     data_noisy = np.loadtxt('wifi_db/noisy_dataset.txt')
     tree, max_depth = decision_tree_learning(data_clean)
-    print_tree(tree)
+    print_tree(tree)    
+    
+    
+    print("Clean data cross-validation")
+    clean_cf_matrix, clean_fold_acc, clean_eval_metric = cross_validate(data_clean,k=10)
+    print("Confusion matrix\n", clean_cf_matrix)
+    print("Average accuracy",clean_fold_acc)
+    print("Class Precision", np.round(clean_eval_metric['precision'],4))
+    print("Class Recall", np.round(clean_eval_metric['recall'],4))
+    print("ClassF1", np.round(clean_eval_metric['f1_score'],4))
+    
+    
+    print("Noisy data cross-validation")
+    noisy_cf_matrix, noisy_fold_acc, noisy_eval_metric = cross_validate(data_noisy,k=10)
+    print("Confusion matrix", noisy_cf_matrix)
+    print("Average accuracy",noisy_fold_acc)
+    print("Class Precision", np.round(noisy_eval_metric['precision'],4))
+    print("Class Recall", np.round(noisy_eval_metric['recall'],4))
+    print("ClassF1", np.round(noisy_eval_metric['f1_score'],4))
 
 
