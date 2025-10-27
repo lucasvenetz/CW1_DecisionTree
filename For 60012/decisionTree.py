@@ -99,12 +99,12 @@ def print_tree(node, depth=0, prefix="Root: "):
         print(f"{indent}{prefix}features[{node['attribute']}] < {node['value']}")
         print_tree(node['left'], depth + 1, "L: ")
         print_tree(node['right'], depth + 1, "R: ")
-
-def create_confusion_matrix(y_true, y_pred, cf_matrix):
     
-    k = len(cf_matrix)
+def create_confusion_matrix(y_true, y_pred):
+    cf_matrix = np.zeros((4,4), dtype=int)
 
-    class_idx_mapping = {cls : idx for idx, cls in enumerate(k)}
+    k = len(cf_matrix)
+    class_idx_mapping = {cls : idx for idx, cls in enumerate(range(1,k+1))}
     for true, pred in zip(y_true, y_pred):
         true_idx = class_idx_mapping[true]
         pred_idx = class_idx_mapping[pred]
@@ -147,7 +147,68 @@ def calc_metric(matrix):
         'recall': recall,
         'f1_score': f1_score
     }
+    
+def predict_one(sample, tree):
+    node = tree
+    while not node.get('leaf', False):
+        if sample[node['attribute']] < node['value']:
+            node = node['left']
+        else:
+            node = node['right']
+    return int(node['value'])
 
+def predict(test_list, tree):
+    out = np.empty(test_list.shape[0], dtype=int)
+    for i in range(test_list.shape[0]):
+        out[i] = predict_one(test_list[i], tree)
+    return out        
+
+
+def kfold_split(dataset, k = 10, seed = 42):     #Break up the dataset into 10 sets
+
+    randomizer = np.random.default_rng(seed)
+    label = dataset[:, -1].astype(int)
+    classes = np.unique(label)
+    # group by class
+    class_idxs = []
+    for c in classes: 
+        idx = np.where(label == c)[0]
+        if idx.size > 0:
+            perm = randomizer.permutation(idx.size)
+            class_idxs.append(idx[perm])
+        else:
+            class_idxs.append(np.array([], dtype=int))
+
+    folds = [[] for _ in range(k)]
+    for c_idx in class_idxs:
+        for i, gidx in enumerate(c_idx):
+            folds[i % k].append(int(gidx))
+
+    folds = [np.array(sorted(f), dtype=int) for f in folds]
+    return folds
+
+def evaluate(test_db, trained_tree):
+    test_samples = test_db[:, :-1]
+    class_true = test_db[:, -1].astype(int)
+    class_pred = predict(test_samples, trained_tree)
+    fold_cf = create_confusion_matrix(class_true, class_pred)
+    return fold_cf
+
+def cross_validate(dataset, k=10, seed=42, max_depth=None, min_samples_split=2):
+    folds = kfold_split(dataset, k=k, seed=seed)
+    cf_matrix = np.zeros((4, 4), dtype=int)
+    for i in range(k):
+        test_idx = folds[i]
+        train_idx = np.concatenate([folds[j] for j in range(k) if j != i]) if k > 1 else folds[i]
+        train_db = dataset[train_idx]
+        test_db = dataset[test_idx]
+
+        tree, _ = decision_tree_learning(train_db, 0)
+        fold_cf = evaluate(test_db, tree)
+        cf_matrix += fold_cf
+    avg_acc = calc_accuracy(cf_matrix)
+    test_metric = calc_metric(cf_matrix)
+    return cf_matrix, avg_acc, test_metric
 def visualise_tree(node, spacing=3.0, dy=2.0, cmap='tab20'):
     pos = {}
     _set_pos(node, 0, pos, counter=[0], spacing=spacing)
@@ -192,8 +253,8 @@ def _draw(ax, node, pos, depth, max_depth, dy, cmap):
 
 if __name__ == "__main__":
     data_clean = np.loadtxt('wifi_db/clean_dataset.txt')
-
+    data_noisy = np.loadtxt('wifi_db/noisy_dataset.txt')
     tree, max_depth = decision_tree_learning(data_clean)
     print_tree(tree)
-    visualise_tree(tree)
+
 
