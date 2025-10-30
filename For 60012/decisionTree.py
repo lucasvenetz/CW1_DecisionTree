@@ -7,6 +7,7 @@ each sample has 7 WIFI signal strengths, last column is room no.
 user is standing at. (i.e sample label)
 """
 
+## TREE GENERATION ##
 def decision_tree_learning(dataset, depth=0):
 
     features = dataset[:, :-1]
@@ -107,7 +108,7 @@ def calc_accuracy(matrix):
     result = np.trace(matrix) / np.sum(matrix)
     return result
 
-def calc_metric(matrix):
+def calc_metric(matrix):    #Calculate evaluation metrics (Precision, Recall, F1 score)
     k = len(matrix)
     precision = np.zeros(k)
     recall = np.zeros(k)
@@ -138,7 +139,8 @@ def calc_metric(matrix):
         'recall': recall,
         'f1_score': f1_score
     }
-    
+
+## CLASS PREDICTION ##  
 def predict_one(sample, tree):
     node = tree
     while not node.get('leaf', False):
@@ -155,8 +157,8 @@ def predict(test_list, tree):
     return out        
 
 
-# Break up the dataset into 10 sets
-def kfold_split(dataset, k = 10, seed = 42): 
+## EVALUATION K-FOLD ##
+def kfold_split(dataset, k = 10, seed = 42):    #Breaking dataset into 10 folds
 
     randomizer = np.random.default_rng(seed)
     label = dataset[:, -1].astype(int)
@@ -259,7 +261,7 @@ def _draw(ax, node, pos, depth, max_depth, dy, cmap):
                     fontsize=8, fontweight="bold", color="black", alpha=0.8)
             _draw(ax, child, pos, depth + 1, max_depth, dy, cmap)
 
-
+## MAIN ##
 if __name__ == "__main__":
     data_clean = np.loadtxt('wifi_db/clean_dataset.txt')
     data_noisy = np.loadtxt('wifi_db/noisy_dataset.txt')
@@ -268,18 +270,18 @@ if __name__ == "__main__":
     print("Clean data cross-validation")
     clean_cf_matrix, clean_fold_acc, clean_eval_metric = cross_validate(data_clean,k=10)
     print("Confusion matrix\n", clean_cf_matrix)
-    print("Average accuracy",clean_fold_acc)
-    print("Class Precision", np.round(clean_eval_metric['precision'],4))
-    print("Class Recall", np.round(clean_eval_metric['recall'],4))
-    print("ClassF1", np.round(clean_eval_metric['f1_score'],4))
+    print("Average accuracy: ",clean_fold_acc)
+    print("Class Precision: ", np.round(clean_eval_metric['precision'],4))
+    print("Class Recall: ", np.round(clean_eval_metric['recall'],4))
+    print("Class F1 score: ", np.round(clean_eval_metric['f1_score'],4))
     
     print("Noisy data cross-validation")
     noisy_cf_matrix, noisy_fold_acc, noisy_eval_metric = cross_validate(data_noisy,k=10)
     print("Confusion matrix\n", noisy_cf_matrix)
-    print("Average accuracy",noisy_fold_acc)
-    print("Class Precision", np.round(noisy_eval_metric['precision'],4))
-    print("Class Recall", np.round(noisy_eval_metric['recall'],4))
-    print("ClassF1", np.round(noisy_eval_metric['f1_score'],4))
+    print("Average accuracy: ",noisy_fold_acc)
+    print("Class Precision: ", np.round(noisy_eval_metric['precision'],4))
+    print("Class Recall: ", np.round(noisy_eval_metric['recall'],4))
+    print("Class F1 score: ", np.round(noisy_eval_metric['f1_score'],4))
 
     print_tree(tree)    
     visualise_tree(tree)
